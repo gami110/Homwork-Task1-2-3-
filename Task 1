@@ -1,0 +1,34 @@
+import requests
+import pandas as pd
+
+def parsing():
+    offset_ = 1
+    limit_ = 100
+    url = f'https://xn--80az8a.xn--d1aqf.xn--p1ai/%D1%81%D0%B5%D1%80%D0%B2%D0%B8%D1%81%D1%8B/api/kn/object?offset={offset_}&limit={limit_}&sortField=devId.devShortCleanNm&sortType=asc&objStatus=0'
+    res = requests.get(url)
+    objects_data = res.json()
+    objects_data.get('data').get('list')
+    objects_list = objects_data.get('data').get('list')
+    objids = [x.get('objId') for x in objects_list]
+    objects_array = []
+    for i in range(len(objids)):
+        url_object = f'https://xn--80az8a.xn--d1aqf.xn--p1ai/%D1%81%D0%B5%D1%80%D0%B2%D0%B8%D1%81%D1%8B/api/object/{objids[i]}'
+        try:
+            objimg = requests.get(url_object)
+            objimgjs = objimg.json()
+            data_img = objimgjs.get('data').get('photoRenderDTO')
+            res_img = [x.get('objRenderPhotoUrl') for x in data_img]
+
+            data = pd.DataFrame({
+                'data-object': str(objects_list[i]),
+                'img': res_img[0],
+            }, index=[i])
+            objects_array.append(data)
+        except:
+            continue
+    objects_res = pd.concat(objects_array)
+    objects_res.to_csv("data.csv")
+    objects_res.to_json('data.js')
+
+
+parsing()
