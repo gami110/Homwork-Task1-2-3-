@@ -3,18 +3,30 @@ import pandas as pd
 
 def parsing():
     offset_ = 1
-    limit_ = 100
-    url = f'https://xn--80az8a.xn--d1aqf.xn--p1ai/%D1%81%D0%B5%D1%80%D0%B2%D0%B8%D1%81%D1%8B/api/kn/object?offset={offset_}&limit={limit_}&sortField=devId.devShortCleanNm&sortType=asc&objStatus=0'
-    res = requests.get(url)
-    objects_data = res.json()
-    objects_data.get('data').get('list')
-    objects_list = objects_data.get('data').get('list')
-    objids = [x.get('objId') for x in objects_list]
+    limit_ = 1000
+    objids = []
+    flag = True
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36',
+    }
+    while flag:
+        url = f'https://xn--80az8a.xn--d1aqf.xn--p1ai/%D1%81%D0%B5%D1%80%D0%B2%D0%B8%D1%81%D1%8B/api/kn/object?offset={offset_}&limit={limit_}&sortField=devId.devShortCleanNm&sortType=asc&objStatus=0'
+        try:
+            res = requests.get(url, headers=headers)
+            objects_data = res.json()
+            objects_data.get('data').get('list')[0]
+            objects_list = objects_data.get('data').get('list')
+            objids.extend([x.get('objId') for x in objects_list])
+            offset_ += limit_
+            print(offset_)
+        except:
+            flag = False
+    print(len(objids))
     objects_array = []
     for i in range(len(objids)):
         url_object = f'https://xn--80az8a.xn--d1aqf.xn--p1ai/%D1%81%D0%B5%D1%80%D0%B2%D0%B8%D1%81%D1%8B/api/object/{objids[i]}'
         try:
-            objimg = requests.get(url_object)
+            objimg = requests.get(url_object, headers=headers)
             objimgjs = objimg.json()
             data_img = objimgjs.get('data').get('photoRenderDTO')
             res_img = [x.get('objRenderPhotoUrl') for x in data_img]
@@ -24,11 +36,12 @@ def parsing():
                 'img': res_img[0],
             }, index=[i])
             objects_array.append(data)
+            print(i)
         except:
-            continue
+            print('Ошибка')
     objects_res = pd.concat(objects_array)
     objects_res.to_csv("data.csv")
-    objects_res.to_json('data.js')
+    objects_res.to_json('data.json')
 
 
 parsing()
